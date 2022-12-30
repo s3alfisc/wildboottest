@@ -28,26 +28,26 @@ class WildboottestHC:
   
     Example:
       
-      >>> import numpy as np
-      >>> from wildboottest.wildboottest import WildboottestHC
-      >>> np.random.seed(12312312)
-      >>> N = 1000
-      >>> k = 3
-      >>> G = 10
-      >>> X = np.random.normal(0, 1, N * k).reshape((N,k))
-      >>> beta = np.random.normal(0,1,k)
-      >>> beta[0] = 0.005
-      >>> u = np.random.normal(0,1,N)
-      >>> Y = 1 + X @ beta + u
-      >>> R = np.array([1, 0, 0])
-      >>> B = 999
+        >>> import numpy as np
+        >>> from wildboottest.wildboottest import WildboottestHC
+        >>> np.random.seed(12312312)
+        >>> N = 1000
+        >>> k = 3
+        >>> G = 10
+        >>> X = np.random.normal(0, 1, N * k).reshape((N,k))
+        >>> beta = np.random.normal(0,1,k)
+        >>> beta[0] = 0.005
+        >>> u = np.random.normal(0,1,N)
+        >>> Y = 1 + X @ beta + u
+        >>> R = np.array([1, 0, 0])
+        >>> B = 999
 
-      >>> wb = WildboottestHC(X = X, Y = Y, R = R, B = B)
-      >>> wb.get_adjustments(bootstrap_type = '11')
-      >>> wb.get_uhat(impose_null = True)
-      >>> wb.get_tboot(weights_type = "webb")
-      >>> wb.get_tstat()
-      >>> wb.get_pvalue()  
+        >>> wb = WildboottestHC(X = X, Y = Y, R = R, B = B)
+        >>> wb.get_adjustments(bootstrap_type = '11')
+        >>> wb.get_uhat(impose_null = True)
+        >>> wb.get_tboot(weights_type = "rademacher")
+        >>> wb.get_tstat()
+        >>> wb.get_pvalue()  
     """
 
     def __init__(self, X : Union[np.ndarray, pd.DataFrame, pd.Series], 
@@ -85,7 +85,8 @@ class WildboottestHC:
           self.Y = Y
 
         if isinstance(seed, int):
-          np.random.seed(seed)
+          self.seed = seed
+          np.random.seed(self.seed)
 
         self.N = X.shape[0]
         self.k = X.shape[1]
@@ -94,6 +95,8 @@ class WildboottestHC:
         
         if self.X.shape[1] != self.R.shape[0]:
           raise TestMatrixNonConformabilityException("The number of rows in the test matrix R, does not ")
+
+
 
     def get_adjustments(self, bootstrap_type):
 
@@ -160,9 +163,11 @@ class WildboottestHC:
         #RXXinv_2 = np.power(np.transpose(R) @ self.tXXinv, 2)
 
         @njit(parallel = True)
-        def _run_hc_bootstrap(B, weights_type, N, X, yhat, uhat2, tXXinv, RXXinvX_2, Rt, small_sample_correction):
+        def _run_hc_bootstrap(B, weights_type, N, X, yhat, uhat2, tXXinv, RXXinvX_2, Rt, small_sample_correction, seed):
 
-            #rng = np.random.default_rng()
+            # seed the numba random number generator
+            if seed is not None:
+                np.random.seed(seed)
 
             t_boot = np.zeros(B)
             tXXinvX = tXXinv @ np.transpose(X)
@@ -197,7 +202,8 @@ class WildboottestHC:
             tXXinv = self.tXXinv, 
             RXXinvX_2 = self.RXXinvX_2, 
             Rt = np.transpose(R), 
-            small_sample_correction=self.small_sample_correction
+            small_sample_correction=self.small_sample_correction, 
+            seed = self.seed
           )
  
     def get_tstat(self):
@@ -330,7 +336,8 @@ class WildboottestCL:
       self.bootcluster = bootcluster
       
     if isinstance(seed, int):
-      np.random.seed(seed)
+      self.seed = seed
+      np.random.seed(self.seed)
 
     self.N_G_bootcluster = len(self.bootclustid)
     self.G  = len(self.clustid)

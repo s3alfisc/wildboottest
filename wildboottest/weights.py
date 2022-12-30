@@ -6,12 +6,10 @@ class WildDrawFunctionException(Exception):
     pass
 
 def rademacher(n: int) -> np.ndarray:
-    rng = np.random.default_rng()
-    return rng.choice([-1,1],size=n, replace=True)
+    return np.random.choice([-1,1],size=n, replace=True)
 
 def mammen(n: int) -> np.ndarray:
-    rng = np.random.default_rng()
-    return rng.choice(
+    return np.random.choice(
         a= np.array([-1, 1]) * (np.sqrt(5) + np.array([-1, 1])) / 2, #TODO: #10 Should this divide the whole expression by 2 or just the second part
         size=n,
         replace=True,
@@ -19,12 +17,10 @@ def mammen(n: int) -> np.ndarray:
     )
     
 def norm(n):
-    rng = np.random.default_rng()
-    return rng.normal(size=n)
+    return np.random.normal(size=n)
 
 def webb(n):
-    rng = np.random.default_rng()
-    return rng.choice(
+    return np.random.choice(
         a = np.concatenate([-np.sqrt(np.array([3,2,1]) / 2), np.sqrt(np.array([1,2,3]) / 2)]),
         replace=True,
         size=n
